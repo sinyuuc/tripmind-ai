@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import SearchForm from "../components/SearchForm";
-import Itinerary from "../components/Itinerary";
+import SearchForm from "@/components/SearchForm";
+import Itinerary from "@/components/Itinerary";
+import type { ItineraryData } from "@/types";
 
 export default function HomePage() {
   const [itineraryData, setItineraryData] = useState<ItineraryData | null>(null);
@@ -16,21 +17,4 @@ export default function HomePage() {
       </div>
     </div>
   );
-}
-
-// TypeScript 类型定义
-export interface Activity {
-  name: string;
-  description: string;
-  image?: string;
-}
-
-export interface DayItinerary {
-  day: number;
-  activities: Activity[];
-}
-
-export interface ItineraryData {
-  destination: string;
-  itinerary: DayItinerary[];
 }

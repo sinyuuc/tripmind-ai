@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+
+async function getUserId() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll() {},
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id;
+}
 
 export async function POST(req: NextRequest) {
   const { destination, days, budget } = await req.json();
@@ -11,6 +35,9 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+
+  // Get authenticated user (optional - allows anonymous usage)
+  const userId = await getUserId();
 
   try {
     const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -47,8 +74,35 @@ export async function POST(req: NextRequest) {
 
     const result = await res.json();
     const content = JSON.parse(result.choices[0].message.content);
-    return NextResponse.json(content);
+
+    // Save to database if user is authenticated and Supabase is configured
+    let historyId: string | undefined;
+    if (userId && supabaseAdmin) {
+      const question = `目的地：${destination}，天数：${days}，预算：${budget || "不限"}`;
+      const { data: historyData, error: dbError } = await supabaseAdmin
+        .from("travel_history")
+        .insert({
+          user_id: userId,
+          question,
+          ai_response: content,
+        })
+        .select("id")
+        .single();
+
+      if (dbError) {
+        console.error("Failed to save travel history:", dbError);
+        // Don't fail the request if DB save fails
+      } else {
+        historyId = historyData?.id;
+      }
+    }
+
+    return NextResponse.json({
+      ...content,
+      history_id: historyId,
+    });
   } catch (err) {
+    console.error("API call failed:", err);
     return NextResponse.json({ error: "API调用失败" }, { status: 500 });
   }
 }

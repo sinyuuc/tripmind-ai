@@ -1,4 +1,4 @@
-import { ItineraryData } from "../app/page";
+import type { ItineraryData } from "@/types";
 
 interface ItineraryProps {
   data: ItineraryData;
@@ -6,7 +6,7 @@ interface ItineraryProps {
 
 export default function Itinerary({ data }: ItineraryProps) {
   return (
-    <div className="max-w-3xl mx-auto mt-6 space-y-4">
+    <div className="max-w-3xl mx-auto mt-6 space-y-4 text-left">
       <h2 className="text-2xl font-semibold mb-2 text-white/90">{data.destination} 的推荐行程</h2>
       {data.itinerary?.map((dayItem) => (
         <div

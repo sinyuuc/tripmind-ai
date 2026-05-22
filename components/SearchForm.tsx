@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { ItineraryData } from "../app/page";
+import type { ItineraryData } from "@/types";
 
 interface SearchFormProps {
   setItineraryData: (data: ItineraryData) => void;
